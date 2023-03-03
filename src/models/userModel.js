@@ -42,6 +42,10 @@ const userSchema = mongoose.Schema(
         }
       },
     },
+    avatar: {
+      type: Buffer,
+      // all the validations are done using the multer middleware, so no need to validate here
+    },
     tokens: [
       {
         token: {
@@ -62,6 +66,7 @@ userSchema.virtual("tasks", {
   foreignField: "owner",
 });
 
+//methods are accessible on the instances
 userSchema.methods.toJSON = function () {
   const user = this;
   const userObject = user.toObject();
@@ -80,6 +85,8 @@ userSchema.methods.generateAuthToken = async function () {
   await user.save();
   return token;
 };
+
+//statics are accessible on the models
 userSchema.statics.getUserByCredentials = async (email, password) => {
   const user = await User.findOne({ email });
 

@@ -11,6 +11,8 @@ const taskSchema = mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    // This is the relationship between the user and the task
+    // Types.ObjectId is a special type of data that is used to store the id of another object
     owner: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
@@ -22,6 +24,7 @@ const taskSchema = mongoose.Schema(
   }
 );
 
+// creating a model with the taskSchema
 const Task = mongoose.model("Task", taskSchema);
 
 module.exports = Task;

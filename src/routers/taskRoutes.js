@@ -3,6 +3,7 @@ const Task = require("../models/taskModel");
 const router = new express.Router();
 const auth = require("../middleware/auth");
 
+//auth is a middleware, it will run before the route handler
 router.post("/tasks", auth, async (req, res) => {
   const task = new Task({
     ...req.body,
@@ -45,6 +46,9 @@ router.get("/tasks", auth, async (req, res) => {
     match.completed = req.query.completed === "true";
   }
   try {
+    // populate is used to populate the data from the other collection
+    // path is used to tell mongoose, which field we want to populate
+    // match option is used to filter the data, we created a match object above
     await req.user
       .populate({
         path: "tasks",
