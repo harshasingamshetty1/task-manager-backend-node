@@ -3,12 +3,18 @@ const User = require("../models/userModel");
 const auth = require("../middleware/auth.js");
 const router = new express.Router();
 const multer = require("multer");
+const sharp = require("sharp");
+const {
+  sendWelcomeEmail,
+  sendCancelationEmail,
+} = require("../emails/accounts");
 
 router.post("/users", async (req, res) => {
   const user = new User(req.body);
   console.log(user);
   try {
     await user.save();
+    sendWelcomeEmail(user.email, user.name);
     const token = await user.generateAuthToken();
     res.status(201).send({ user, token });
   } catch (e) {
@@ -88,7 +94,13 @@ router.post(
   auth,
   uploadAvatar.single("avatar"),
   async (req, res) => {
-    req.user.avatar = req.file.buffer;
+    // sharp is used to manipulate images, it takes the buffer as an argument
+    const buffer = await sharp(req.file.buffer)
+      .resize(250, 250)
+      .png()
+      .toBuffer();
+    req.user.avatar = buffer;
+
     await req.user.save();
     res.status(200).send();
   },
@@ -98,6 +110,22 @@ router.post(
     res.status(400).send({ error: error.message });
   }
 );
+
+// displaying the avatar
+router.get("/users/:id/avatar", async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user || !user.avatar) {
+      throw new Error("User not found");
+    }
+    //by default, the content-type is set to application/json, so we need to set it to image/jpg
+    res.set("Content-Type", "image/png");
+    res.send(user.avatar);
+  } catch (e) {
+    res.status(404).send();
+  }
+});
+
 router.get("/users/me", auth, async (req, res) => {
   try {
     if (req.user) {
@@ -138,9 +166,11 @@ router.delete("/users/me/avatar", auth, async (req, res) => {
 
   res.status(200).send();
 });
+
 router.delete("/users/me", auth, async (req, res) => {
   try {
     await req.user.deleteOne();
+    sendCancelationEmail(req.user.email, req.user.name);
     res.send(req.user);
   } catch (e) {
     res.status(500).send();
